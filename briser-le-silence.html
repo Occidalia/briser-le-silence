@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Briser le Silence</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#08080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Press Start 2P',monospace;overflow:hidden;}
+#gw{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;}
+#titlebar{color:#e85d75;font-size:10px;letter-spacing:3px;text-shadow:0 0 20px #e85d7588;}
+#hud{display:flex;align-items:center;justify-content:space-between;width:640px;background:#0f0f1a;border:2px solid #2a2a3e;padding:5px 10px;gap:6px;flex-wrap:wrap;}
+#hud-left{display:flex;align-items:center;gap:10px;}
+#hud-right{display:flex;align-items:center;gap:6px;}
+#hud-zone{color:#7eb8f7;font-size:6px;}
+#hud-fiches{color:#f7c948;font-size:6px;}
+#hud-news{color:#86efac;font-size:6px;}
+#hud-jbtn{background:#1a1a2e;border:1px solid #e85d75;color:#e85d75;font-family:'Press Start 2P',monospace;font-size:5px;padding:3px 7px;cursor:pointer;}
+#hud-helpbtn{background:#1a1a2e;border:1px solid #7eb8f7;color:#7eb8f7;font-family:'Press Start 2P',monospace;font-size:5px;padding:3px 7px;cursor:pointer;white-space:nowrap;}
+#hud-notebtn{background:#1a1a2e;border:1px solid #a855f7;color:#a855f7;font-family:'Press Start 2P',monospace;font-size:5px;padding:3px 7px;cursor:pointer;white-space:nowrap;}
+/* HELP */
+#helpov{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:460px;background:#0d0d1f;border:3px solid #7eb8f7;box-shadow:0 0 30px #7eb8f733;z-index:80;padding:20px;}
+#help-t{color:#7eb8f7;font-size:8px;text-align:center;margin-bottom:14px;letter-spacing:2px;}
+.hrow{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.hkey{background:#1a1a2e;border:2px solid #7eb8f7;color:#7eb8f7;font-family:'Press Start 2P',monospace;font-size:6px;padding:4px 8px;min-width:80px;text-align:center;}
+.hdesc{color:#c8c8e8;font-family:'VT323',monospace;font-size:17px;}
+#help-cl{text-align:center;color:#7eb8f7;font-size:6px;margin-top:12px;animation:blink .8s infinite;}
+/* NOTE */
+#noteov{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;background:#0d0d1f;border:3px solid #a855f7;box-shadow:0 0 30px #a855f733;z-index:80;padding:22px;}
+#note-t{color:#a855f7;font-size:8px;text-align:center;margin-bottom:14px;letter-spacing:2px;}
+#note-body{color:#d8d8f0;font-family:'VT323',monospace;font-size:17px;line-height:1.8;white-space:pre-line;}
+#note-cl{text-align:center;color:#a855f7;font-size:6px;margin-top:12px;animation:blink .8s infinite;}
+canvas{display:block;border:2px solid #2a2a3e;image-rendering:pixelated;box-shadow:0 0 40px #e85d7511;}
+#hint{color:#2a2a4e;font-size:5px;letter-spacing:2px;}
+
+/* overlays */
+.ov{display:none;position:absolute;left:50%;transform:translateX(-50%);z-index:20;padding:16px 18px;}
+
+/* TITRE */
+#ts{position:absolute;top:0;left:0;right:0;bottom:0;background:#08080f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:14px;}
+#tm{color:#e85d75;font-size:22px;letter-spacing:4px;text-shadow:0 0 30px #e85d75aa;text-align:center;line-height:1.7;animation:glow 2s ease-in-out infinite;}
+#tsub{color:#7eb8f7;font-size:8px;letter-spacing:2px;text-align:center;}
+#tdesc{color:#4a4a6e;font-size:7px;text-align:center;line-height:2.2;}
+#tpress{color:#f7c948;font-size:8px;margin-top:16px;animation:blink 1s infinite;}
+
+/* TRANSITION */
+#ztrans{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#08080f;z-index:90;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px;}
+#ztn{color:#e85d75;font-size:11px;letter-spacing:3px;}
+#ztnm{color:#7eb8f7;font-size:16px;letter-spacing:4px;text-shadow:0 0 20px #7eb8f788;}
+#ztds{color:#5a5a8a;font-size:7px;line-height:2.2;max-width:400px;white-space:pre-line;}
+#ztpr{color:#f7c948;font-size:7px;animation:blink .9s infinite;}
+
+/* DIALOGUE */
+#dial{bottom:44px;width:600px;background:#0d0d1f;border:3px solid #7eb8f7;box-shadow:0 0 20px #7eb8f733;}
+#dwho{color:#f7c948;font-size:8px;margin-bottom:8px;}
+#dtxt{color:#d8d8f0;font-family:'VT323',monospace;font-size:19px;line-height:1.7;min-height:55px;}
+#dcont{color:#7eb8f7;font-size:6px;text-align:right;margin-top:6px;animation:blink .8s infinite;}
+
+/* FICHE */
+#fov{top:50%;transform:translate(-50%,-50%);width:490px;background:#0d0d1f;border:3px solid #f7c948;box-shadow:0 0 30px #f7c94833;max-height:420px;overflow-y:auto;}
+#ft{color:#f7c948;font-size:8px;margin-bottom:10px;text-align:center;letter-spacing:2px;}
+#fc{color:#d8d8f0;font-family:'VT323',monospace;font-size:17px;line-height:1.7;white-space:pre-line;}
+#fcl{margin-top:12px;text-align:center;color:#f7c948;font-size:6px;animation:blink .8s infinite;}
+
+/* NEWSPAPER */
+#nov{top:50%;transform:translate(-50%,-50%);width:510px;background:#0f1a0d;border:3px solid #86efac;box-shadow:0 0 30px #86efac33;max-height:420px;overflow-y:auto;}
+#nt{color:#86efac;font-size:7px;margin-bottom:4px;text-align:center;letter-spacing:2px;}
+#nsrc{color:#4a8a5a;font-size:5px;text-align:center;margin-bottom:10px;font-style:italic;}
+#nc{color:#d0f0d0;font-family:'VT323',monospace;font-size:17px;line-height:1.7;white-space:pre-line;}
+#ncl{margin-top:12px;text-align:center;color:#86efac;font-size:6px;animation:blink .8s infinite;}
+
+/* JOURNAL */
+#jov{top:50%;transform:translate(-50%,-50%);width:560px;max-height:400px;background:#0a0a18;border:3px solid #e85d75;overflow-y:auto;box-shadow:0 0 30px #e85d7533;}
+#jt{color:#e85d75;font-size:9px;text-align:center;margin-bottom:10px;letter-spacing:3px;}
+#jtabs{display:flex;gap:6px;margin-bottom:10px;}
+.jtab{background:#1a1a2e;border:1px solid #3a3a5e;color:#5a5a8a;font-family:'Press Start 2P',monospace;font-size:6px;padding:4px 8px;cursor:pointer;}
+.jtab.active{border-color:#e85d75;color:#e85d75;}
+.je{border-bottom:1px solid #1a1a2e;padding:8px 0;color:#c8c8e8;font-family:'VT323',monospace;font-size:16px;line-height:1.6;}
+.jth{font-family:'Press Start 2P',monospace;font-size:6px;margin-bottom:4px;}
+.jth-f{color:#f7c948;}.jth-n{color:#86efac;}
+#jemp{color:#3a3a5e;font-family:'VT323',monospace;font-size:18px;text-align:center;margin-top:14px;}
+#jcls{display:block;margin:12px auto 0;background:#1a1a2e;border:1px solid #e85d75;color:#e85d75;font-family:'Press Start 2P',monospace;font-size:6px;padding:6px 12px;cursor:pointer;}
+
+/* QUIZ */
+#qov{top:50%;transform:translate(-50%,-50%);width:590px;background:#080814;border:3px solid #a855f7;box-shadow:0 0 40px #a855f733;max-height:90%;overflow-y:auto;}
+#qtit{color:#a855f7;font-size:9px;text-align:center;margin-bottom:4px;letter-spacing:2px;}
+#qprog{color:#5a5a8a;font-size:6px;text-align:center;margin-bottom:14px;}
+#qq{color:#e8e8ff;font-family:'VT323',monospace;font-size:20px;line-height:1.6;margin-bottom:14px;min-height:50px;}
+.qo{display:block;width:100%;background:#0f0f20;border:2px solid #2a2a4e;color:#b8b8d8;font-family:'VT323',monospace;font-size:17px;padding:9px 12px;margin-bottom:7px;cursor:pointer;text-align:left;}
+.qo:hover{border-color:#a855f7;background:#1a0a2e;color:#fff;}
+.qo.ok{border-color:#4ade80;background:#0a1f10;color:#4ade80;}
+.qo.ko{border-color:#f87171;background:#1f0a0a;color:#f87171;}
+#qfb{min-height:38px;font-family:'VT323',monospace;font-size:17px;line-height:1.5;margin-top:8px;}
+#qnx{display:none;margin:10px auto 0;background:#1a0a2e;border:2px solid #a855f7;color:#a855f7;font-family:'Press Start 2P',monospace;font-size:6px;padding:8px 16px;cursor:pointer;}
+
+/* SCORE */
+#sov{top:50%;transform:translate(-50%,-50%);width:540px;background:#080814;border:3px solid #4ade80;text-align:center;box-shadow:0 0 40px #4ade8033;}
+#sct{color:#4ade80;font-size:10px;margin-bottom:16px;letter-spacing:2px;}
+#scn{color:#f7c948;font-family:'VT323',monospace;font-size:34px;}
+#scm{color:#c8c8e8;font-family:'VT323',monospace;font-size:17px;line-height:1.7;margin-top:12px;white-space:pre-line;}
+#snx{margin-top:16px;background:#0a1f10;border:2px solid #4ade80;color:#4ade80;font-family:'Press Start 2P',monospace;font-size:6px;padding:8px 16px;cursor:pointer;}
+#srt{margin-top:6px;background:#0a0814;border:1px solid #5a5a7a;color:#5a5a7a;font-family:'Press Start 2P',monospace;font-size:6px;padding:6px 12px;cursor:pointer;}
+
+/* FIN */
+#end{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#08080f;z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;overflow-y:auto;}
+#et{color:#f7c948;font-size:13px;letter-spacing:3px;animation:glow2 2s infinite;}
+#esub{color:#e85d75;font-size:8px;}
+#esc{color:#4ade80;font-size:11px;margin:6px 0;}
+#enews{color:#86efac;font-size:8px;}
+#emsg{color:#c8c8e8;font-family:'VT323',monospace;font-size:18px;line-height:1.7;max-width:500px;white-space:pre-line;}
+#ezscores{color:#7eb8f7;font-family:'VT323',monospace;font-size:17px;line-height:1.9;margin-top:4px;}
+.einfo{background:#0f0f1a;border:2px solid #2a2a3e;padding:12px 18px;margin-top:8px;width:100%;max-width:460px;}
+.el{color:#7eb8f7;font-family:'VT323',monospace;font-size:16px;line-height:1.9;}
+#ecred{color:#3a3a5e;font-size:6px;margin-top:6px;line-height:2;}
+#eauteurs{color:#7eb8f7;font-size:7px;margin-top:4px;letter-spacing:1px;}
+#erep{background:#1a1a2e;border:2px solid #e85d75;color:#e85d75;font-family:'Press Start 2P',monospace;font-size:6px;padding:8px 16px;cursor:pointer;margin-top:10px;}
+
+/* NOTIF */
+#notif{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#0f1a0d;border:2px solid #86efac;color:#86efac;font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 12px;z-index:60;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes glow{0%,100%{text-shadow:0 0 30px #e85d75aa}50%{text-shadow:0 0 60px #e85d75dd}}
+@keyframes glow2{0%,100%{text-shadow:0 0 30px #f7c94888}50%{text-shadow:0 0 60px #f7c948bb}}
+</style>
+</head>
+<body>
+<div id="gw">
+  <div id="titlebar">✦ BRISER LE SILENCE ✦</div>
+  <div id="hud">
+    <div id="hud-left">
+      <div id="hud-zone">📍 <span id="zlbl">Zone 1</span></div>
+      <div id="hud-fiches">📄 <span id="fcnt">0</span> fiches</div>
+      <div id="hud-news">📰 <span id="ncnt">0</span>/10 journaux</div>
+    </div>
+    <div id="hud-right">
+      <button id="hud-helpbtn" onclick="toggleHelp()">❓ AIDE</button>
+      <button id="hud-notebtn" onclick="toggleNote()">📝 NOTE</button>
+      <button id="hud-jbtn" onclick="toggleJ()">[ J ] JOURNAL</button>
+    </div>
+  </div>
+  <div style="position:relative;">
+    <canvas id="c" width="640" height="480"></canvas>
+    <div id="notif">📰 Journal trouvé !</div>
+
+    <!-- TITRE -->
+    <div id="ts">
+      <div id="tm">BRISER<br>LE SILENCE</div>
+      <div id="tsub">UN JEU SÉRIEUX SUR LES VIOLENCES FAITES AUX FEMMES</div>
+      <div id="tdesc">Tu incarnes une assistante sociale.<br>Explore 3 zones · collecte des fiches et journaux cachés<br>parle aux habitants · réponds aux quiz</div>
+      <div id="tpress">— ESPACE POUR COMMENCER —</div>
+    </div>
+
+    <!-- TRANSITION -->
+    <div id="ztrans">
+      <div id="ztn">ZONE <span id="znum">2</span></div>
+      <div id="ztnm"></div>
+      <div id="ztds"></div>
+      <div id="ztpr">▶ ESPACE pour continuer</div>
+    </div>
+
+    <!-- AIDE -->
+    <div id="helpov">
+      <div id="help-t">❓ AIDE — CONTRÔLES</div>
+      <div class="hrow"><div class="hkey">Z Q S D</div><div class="hdesc">Déplacer le personnage</div></div>
+      <div class="hrow"><div class="hkey">↑ ↓ ← →</div><div class="hdesc">Déplacer le personnage</div></div>
+      <div class="hrow"><div class="hkey">ESPACE</div><div class="hdesc">Interagir · Parler · Ramasser · Continuer · Fermer</div></div>
+      <div class="hrow"><div class="hkey">J</div><div class="hdesc">Ouvrir / fermer le journal</div></div>
+      <div class="hrow"><div class="hkey">❓ AIDE</div><div class="hdesc">Afficher cette fenêtre</div></div>
+      <div class="hrow"><div class="hkey">📝 NOTE</div><div class="hdesc">Lire la note des créateurs</div></div>
+      <div class="hrow"><div class="hkey">📄 Fiche</div><div class="hdesc">Ramassée automatiquement en marchant dessus</div></div>
+      <div class="hrow"><div class="hkey">📰 Journal</div><div class="hdesc">Approche-toi, il apparaît, puis appuie sur ESPACE</div></div>
+      <div id="help-cl">▼ ESPACE pour fermer</div>
+    </div>
+
+    <!-- NOTE DES CRÉATEURS -->
+    <div id="noteov">
+      <div id="note-t">📝 NOTE DES CRÉATEURS</div>
+      <div id="note-body">Le jeu "Briser le Silence" est réalisé dans le cadre
+d'un devoir d'EMC, mais son objectif est plus large :
+sensibiliser chacun à travers un outil ludique au sujet
+des violences conjugales.
+
+Ce jeu est structuré en 3 points :
+  ★ Social
+  ★ Juridique
+  ★ Santé
+
+Nous espérons vous apporter des réponses,
+des informations et expliquer ce qui est
+trop peu commenté.
+
+L'heure est venue de briser le tabou,
+bon jeu !</div>
+      <div id="note-cl">▼ ESPACE pour fermer</div>
+    </div>
+
+    <!-- DIALOGUE -->
+    <div class="ov" id="dial">
+      <div id="dwho"></div><div id="dtxt"></div>
+      <div id="dcont">▼ ESPACE pour continuer</div>
+    </div>
+
+    <!-- FICHE -->
+    <div class="ov" id="fov">
+      <div id="ft"></div><div id="fc"></div>
+      <div id="fcl">▼ ESPACE pour fermer</div>
+    </div>
+
+    <!-- JOURNAL PAPIER -->
+    <div class="ov" id="nov">
+      <div id="nt"></div>
+      <div id="nsrc"></div>
+      <div id="nc"></div>
+      <div id="ncl">▼ ESPACE pour fermer</div>
+    </div>
+
+    <!-- JOURNAL PERSO -->
+    <div class="ov" id="jov">
+      <div id="jt">📒 MON JOURNAL</div>
+      <div id="jtabs">
+        <button class="jtab active" id="jtab-f" onclick="showJTab('f')">📄 FICHES</button>
+        <button class="jtab" id="jtab-n" onclick="showJTab('n')">📰 JOURNAUX (<span id="jncnt">0</span>/10)</button>
+      </div>
+      <div id="jents"></div>
+      <div id="jemp"></div>
+      <button id="jcls" onclick="toggleJ()">FERMER [ J ]</button>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="ov" id="qov">
+      <div id="qtit">⚡ QUIZ</div>
+      <div id="qprog"></div>
+      <div id="qq"></div>
+      <div id="qopts"></div>
+      <div id="qfb"></div>
+      <button id="qnx" onclick="nextQ()">QUESTION SUIVANTE ▶</button>
+    </div>
+
+    <!-- SCORE -->
+    <div class="ov" id="sov">
+      <div id="sct">✅ ZONE TERMINÉE</div>
+      <div id="scn"></div>
+      <div id="scm"></div>
+      <button id="snx" onclick="goNext()">ZONE SUIVANTE ▶</button>
+      <button id="srt" onclick="retryQ()">Réessayer le quiz</button>
+    </div>
+
+    <!-- FIN -->
+    <div id="end">
+      <div id="et">🏆 FÉLICITATIONS</div>
+      <div id="esub">TU AS TERMINÉ BRISER LE SILENCE</div>
+      <div id="esc"></div>
+      <div id="enews"></div>
+      <div id="emsg"></div>
+      <div id="ezscores"></div>
+      <div class="einfo">
+        <div class="el">📞 Violences Femmes Info : <strong style="color:#f7c948">39 19</strong> (gratuit, 7j/7)</div>
+        <div class="el">🚨 Urgence police : <strong style="color:#f7c948">17</strong> &nbsp;|&nbsp; SAMU : <strong style="color:#f7c948">15</strong></div>
+        <div class="el">💬 SMS urgences (zone blanche) : <strong style="color:#f7c948">114</strong></div>
+        <div class="el">🌐 arretonslesviolences.gouv.fr</div>
+      </div>
+      <div id="ecred">Sources : Ministère de l'Intérieur · SSMSI 2024 · Haut Conseil à l'Égalité</div>
+      <div id="eauteurs">Créé par Tarik, Damian, Hugo, Tristan et Lubin · Codé par Claude AI</div>
+      <button id="erep" onclick="location.reload()">▶ REJOUER DEPUIS LE DÉBUT</button>
+    </div>
+  </div>
+  <div id="hint" style="display:none;"></div>
+</div>
+
+<script>
+const TILE=32,COLS=20,ROWS=15;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+
+// ── STATE ──
+let STATE='title',keys={},frame=0,CZ=1;
+let allFiches=[],collectedNews=[],quizScore=0,quizQ=0,quizOK=false;
+let dLine=0,curNPC=null,pendingZ=2,zScores=[0,0,0];
+let jTab='f';
+
+// ── TOGGLE HELP ──
+let helpOpen=false,noteOpen=false;
+function toggleHelp(){
+  helpOpen=!helpOpen;
+  document.getElementById('helpov').style.display=helpOpen?'block':'none';
+  if(helpOpen){noteOpen=false;document.getElementById('noteov').style.display='none';}
+}
+function toggleNote(){
+  noteOpen=!noteOpen;
+  document.getElementById('noteov').style.display=noteOpen?'block':'none';
+  if(noteOpen){helpOpen=false;document.getElementById('helpov').style.display='none';}
+}
+
+// ── MAPS ──
+const MAPS={
+  1:[
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,0,0,0,0,0,5,5,5,5,5,5,5,0,0,0,0,0,0,2],
+    [2,0,2,2,0,0,5,2,2,2,2,2,5,0,0,2,2,0,0,2],
+    [2,0,2,2,0,0,5,2,2,2,2,2,5,0,0,2,2,0,0,2],
+    [2,0,0,0,0,0,5,2,2,2,2,2,5,0,0,0,0,0,0,2],
+    [2,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,2],
+    [2,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,2],
+    [2,5,5,5,5,5,1,0,0,0,0,0,1,5,5,5,5,5,5,2],
+    [2,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,2],
+    [2,0,2,2,0,0,1,1,1,1,1,1,1,0,0,2,2,0,0,2],
+    [2,0,2,2,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,0,0,0,5,5,5,5,5,5,5,5,5,0,0,0,0,0,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  ],
+  2:[
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,4,4,4,4,4,4,4,4,2,2,4,4,4,4,4,4,4,4,2],
+    [2,4,2,2,4,4,4,2,4,2,2,4,2,2,4,4,4,2,4,2],
+    [2,4,2,2,4,4,4,2,4,2,2,4,2,2,4,4,4,2,4,2],
+    [2,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,2],
+    [2,4,4,4,4,4,4,4,4,1,1,4,4,4,4,4,4,4,4,2],
+    [2,2,2,2,2,1,1,2,2,1,1,2,2,1,1,2,2,2,2,2],
+    [2,4,4,4,4,1,1,4,4,4,4,4,4,1,1,4,4,4,4,2],
+    [2,4,4,4,4,1,1,4,4,4,4,4,4,1,1,4,4,4,4,2],
+    [2,4,2,2,4,1,1,4,4,4,4,4,4,1,1,4,2,2,4,2],
+    [2,4,2,2,4,4,4,4,4,4,4,4,4,4,4,4,2,2,4,2],
+    [2,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2],
+    [2,4,4,4,4,5,5,5,5,5,5,5,5,5,4,4,4,4,4,2],
+    [2,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  ],
+  3:[
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,2,2,2,0,0,2,2,2,2,2,2,2,0,0,2,2,2,2],
+    [2,0,2,2,2,0,0,2,2,2,2,2,2,2,0,0,2,2,2,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,2,2,0,2,2,2,2,0,2,2,0,2,2,2,2,0,2,2,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,2,2,2,0,0,0,2,2,2,2,2,0,0,0,2,2,2,2],
+    [2,0,2,2,2,0,0,0,2,2,2,2,2,0,0,0,2,2,2,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,0,0,0,5,5,5,5,5,5,5,5,5,5,5,0,0,0,0,2],
+    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  ]
+};
+
+// ── DONNÉES ZONES ──
+const ZMETA={
+  1:{lbl:'Zone 1 : Le Quartier',name:'LE QUARTIER',desc:'Parle aux habitants.\nDécouvre les réalités des violences conjugales.\nCollecte les fiches et les journaux cachés.'},
+  2:{lbl:'Zone 2 : Le Commissariat',name:'LE COMMISSARIAT',desc:'Rencontre policiers et juristes.\nApprends tes droits et les recours légaux.'},
+  3:{lbl:"Zone 3 : L'Hôpital",name:"L'HÔPITAL",desc:'Médecins et psychologues témoignent.\nComprends les conséquences et les aides.'},
+};
+
+// ── FICHES (contenu PDF) ──
+const FICHED={
+  1:[
+    {id:'f1a',x:7*TILE+8,y:6*TILE+8,
+     title:'📊 LES CHIFFRES (1A)',
+     content:'En France, 1 femme meurt tous les 2,5 jours sous\nles coups de son partenaire.\n\nAu-delà des 271 000 victimes recensées en 2023,\nil existe un "chiffre noir" : seule 1 victime sur 6\nporte plainte (enquête VRS 2023).\n\nCe silence s\'explique par la peur des représailles\net le manque de ressources.'},
+    {id:'f1b',x:13*TILE+8,y:4*TILE+8,
+     title:'🔁 LE CYCLE DE LA VIOLENCE (2A)',
+     content:'La violence n\'est pas une crise de colère isolée,\nc\'est un cycle :\n\n  Tension → Explosion → Excuses → Lune de miel\n\nLa phase de lune de miel crée une emprise\npsychologique qui rend la rupture très difficile\nsocialement.'},
+    {id:'f1c',x:4*TILE+8,y:11*TILE+8,
+     title:'👥 LA SOCIALISATION DIFFÉRENCIÉE (3A)',
+     content:'Les violences s\'inscrivent dans une éducation\nqui valorise parfois la domination masculine\net la passivité féminine.\n\nCe ne sont pas des faits divers, mais le résultat\nd\'une socialisation différentielle qui perpétue\ndes rapports de force inégaux.'},
+  ],
+  2:[
+    {id:'f2a',x:7*TILE+8,y:5*TILE+8,
+     title:"⚖️ L'ORDONNANCE DE PROTECTION (1B)",
+     content:'Le juge peut délivrer en urgence une ordonnance\npour interdire à l\'agresseur d\'approcher la victime,\nmême si celle-ci n\'a pas encore porté plainte.\n\nElle peut être obtenue en 6 jours en moyenne.'},
+    {id:'f2b',x:14*TILE+8,y:4*TILE+8,
+     title:'💬 LE CONSENTEMENT (2B)',
+     content:'Dans le couple, le consentement doit être\nlibre et peut être retiré à tout moment.\n\nLa loi ne reconnaît pas de "devoir conjugal" :\nforcer son partenaire est un crime.\n\nC\'est un mythe qui n\'a aucune valeur légale.'},
+    {id:'f2c',x:4*TILE+8,y:10*TILE+8,
+     title:'📱 LES DISPOSITIFS DE PROTECTION (3B)',
+     content:'• Téléphone Grave Danger (TGD) : pour avertir\n  les secours 24h/24 en cas de danger immédiat.\n\n• Bracelet Anti-Rapprochement (BAR) : avertit\n  la police et la victime si l\'agresseur entre\n  dans une zone interdite.\n\nUn policier a l\'obligation légale de prendre\nune plainte, même sans blessures visibles.'},
+  ],
+  3:[
+    {id:'f3a',x:6*TILE+8,y:3*TILE+8,
+     title:'🧠 LA DISSOCIATION (C1)',
+     content:'Pendant une agression, le cerveau peut\nse "couper" des émotions pour survivre :\nc\'est la dissociation.\n\nLa victime peut alors paraître calme\nou indifférente, ce qui est une réaction\nde défense normale — pas de la complicité.'},
+    {id:'f3b',x:14*TILE+8,y:9*TILE+8,
+     title:'👶 L\'IMPACT SUR LES ENFANTS (C2)',
+     content:'Les enfants vivant dans un foyer violent\nne sont pas de simples "témoins",\nils sont des victimes co-exposées.\n\nCette exposition peut entraîner :\n• Retard de développement\n• Sentiment de culpabilité\n• Troubles du sommeil\n• Échec scolaire'},
+    {id:'f3c',x:4*TILE+8,y:11*TILE+8,
+     title:'🏥 LES UNITÉS MÉDICO-JUDICIAIRES (C3)',
+     content:'Ces unités permettent de faire constater\nles blessures par des médecins experts.\n\nLe certificat médical est une preuve\nessentielle pour la justice, même si on\nne porte pas plainte tout de suite.\n\nNuméro de référence victimes : 39 19'},
+  ]
+};
+
+// ── QUIZ (exactement ceux du PDF) ──
+const QD={
+  1:[
+    {q:"Tous les combien de jours une femme meurt-elle sous les coups de son conjoint ?",
+     o:["Tous les 10 jours","Tous les 2,5 jours","Tous les mois","Tous les jours"],c:1,
+     fb:"✅ B — Tous les 2,5 jours. En 2023, 115 homicides conjugaux ont été enregistrés en France. (Ministère de l'Intérieur, SSMSI 2024)"},
+    {q:"Sur les 271 000 victimes recensées en 2023, combien portent plainte ?",
+     o:["1 victime sur 2","1 victime sur 5","Elles portent toutes plainte","1 victime sur 6"],c:3,
+     fb:"✅ D — Seulement 1 victime sur 6 porte plainte (enquête VRS 2023). La peur et le manque de ressources expliquent ce silence."},
+    {q:"Quelle phase du cycle rend le départ de la victime le plus difficile ?",
+     o:["L'explosion","La lune de miel (excuses)","La tension"],c:1,
+     fb:"✅ B — La lune de miel. Cette phase crée une emprise psychologique profonde qui rend la rupture très difficile socialement."},
+    {q:"Qu'est-ce qui facilite les rapports de force inégaux selon le cours ?",
+     o:["Les revenus de l'homme","La socialisation différenciée","La possession d'enfants"],c:1,
+     fb:"✅ B — La socialisation différenciée. Une éducation qui valorise la domination masculine et la passivité féminine perpétue ces inégalités."},
+  ],
+  2:[
+    {q:"Une Ordonnance de Protection peut-elle être délivrée sans dépôt de plainte ?",
+     o:["Oui, par un juge en cas de danger","Non, jamais","Seulement si l'agresseur est d'accord"],c:0,
+     fb:"✅ A — Oui. Le juge peut la délivrer en urgence même sans plainte, dès lors qu'un danger est établi."},
+    {q:"Qu'est-ce que le \"devoir conjugal\" selon la loi française actuelle ?",
+     o:["Une règle du code civil","Une obligation de rapports sexuels","Un mythe qui n'a aucune valeur légale"],c:2,
+     fb:"✅ C — C'est un mythe sans valeur légale. Forcer son partenaire constitue un crime, même dans le couple."},
+    {q:"À quoi sert le bouton d'alerte sur un Téléphone Grave Danger (TGD) ?",
+     o:["À appeler un avocat","À contacter les secours immédiatement 24h/24","À filmer l'agresseur"],c:1,
+     fb:"✅ B — Le TGD permet d'alerter les secours immédiatement, 24h/24, sans composer de numéro."},
+    {q:"Un policier a-t-il le droit de refuser de prendre une plainte ?",
+     o:["Non, c'est une obligation légale","Oui, s'il n'y a pas de bleus","Uniquement s'il est tard"],c:0,
+     fb:"✅ A — Non. C'est une obligation légale. Tout refus de prendre une plainte est punissable."},
+    {q:"Quel est l'objectif principal du Bracelet Anti-Rapprochement (BAR) ?",
+     o:["Localiser la victime","Empêcher l'agresseur de sortir de chez lui","Alerter la police si l'agresseur entre dans une zone interdite"],c:2,
+     fb:"✅ C — Le BAR alerte la police ET la victime dès que l'agresseur franchit une zone d'exclusion définie par le juge."},
+  ],
+  3:[
+    {q:"Pourquoi une victime peut-elle paraître « anesthésiée » après un choc ?",
+     o:["Elle n'est pas traumatisée","C'est le mécanisme de dissociation du cerveau","Elle est complice","Elle a déjà oublié"],c:1,
+     fb:"✅ B — La dissociation est un mécanisme de survie du cerveau. Paraître calme ne signifie pas ne pas avoir souffert."},
+    {q:"Un enfant qui voit ou entend des violences à la maison est considéré comme :",
+     o:["Un simple spectateur","Une victime co-exposée","Un enfant protégé","Un témoin sans risque"],c:1,
+     fb:"✅ B — Une victime co-exposée. Cette exposition peut entraîner des troubles graves du développement et de l'apprentissage."},
+    {q:"Quel est le numéro national de référence pour les victimes de violences ?",
+     o:["Le 18","Le 114","Le 17","Le 3919"],c:3,
+     fb:"✅ D — Le 39 19, numéro national violet, gratuit et disponible 7j/7 pour les victimes et leurs proches."},
+    {q:"Quel trouble peut toucher un enfant exposé aux violences conjugales ?",
+     o:["Un risque de devenir anorexique","Une accélération de la croissance","Des troubles du sommeil et de l'apprentissage"],c:2,
+     fb:"✅ C — Les enfants exposés peuvent développer des troubles du sommeil, des difficultés scolaires et un sentiment de culpabilité."},
+    {q:"Que peut-on obtenir aux Unités Médico-Judiciaires (UMJ) ?",
+     o:["Un certificat médical servant de preuve","Une nouvelle carte d'identité","Un prêt bancaire","Un logement gratuit"],c:0,
+     fb:"✅ A — Un certificat médical établi par des médecins experts, utilisable comme preuve judiciaire même sans dépôt de plainte immédiat."},
+  ]
+};
+
+// ── NPC ──
+const NPCD={
+  1:[
+    {id:'marie',x:4*TILE+8,y:6*TILE+8,col:'#f4a261',hair:'#8b4513',name:'👩 Marie — Voisine',bubble:'Parle-moi !',
+     lines:["Bonjour... Tu es nouvelle dans le quartier ?",
+             "Je m'appelle Marie. J'habitais à côté d'une famille… on entendait des cris la nuit.",
+             "On n'osait pas appeler. On pensait que c'était des « affaires de famille ».",
+             "Aujourd'hui je sais : en France, une femme meurt tous les 2,5 jours sous les coups de son partenaire.",
+             "Et pourtant, seulement 1 victime sur 6 porte plainte. Le silence protège les agresseurs."]},
+    {id:'sophie',x:15*TILE+8,y:8*TILE+8,col:'#5b8dd9',hair:'#2c3e50',name:'⚖️ Sophie — Juriste bénévole',bubble:"Je peux t'aider !",
+     lines:["Bonjour ! Je suis juriste dans une association d'aide aux victimes.",
+             "La socialisation différenciée explique beaucoup : on apprend aux garçons à dominer, aux filles à se soumettre.",
+             "Ces schémas ne sont pas naturels — ils se construisent et peuvent se déconstruire.",
+             "Le cycle de la violence aussi, ça s'apprend : tension, explosion, excuses, lune de miel…",
+             "Comprendre ce cycle, c'est déjà une façon d'aider les victimes à s'en sortir."]},
+    {id:'p1',x:9*TILE+8,y:12*TILE+8,col:'#a855f7',hair:'#6b21a8',name:'🌟 Portail — Zone 2',bubble:'Quiz ici !',isPortal:true,
+     lines:["Pour avancer vers le Commissariat, prouve ta connaissance.",
+             "Utilise les fiches dans ton journal si tu as des doutes.","Bonne chance !"]},
+  ],
+  2:[
+    {id:'cop',x:4*TILE+8,y:5*TILE+8,col:'#1e3a5f',hair:'#0a1628',name:'👮 Capitaine Renard',bubble:'Questions ?',
+     lines:["Bonjour. Ici, on reçoit beaucoup de victimes — mais beaucoup trop peu osent venir.",
+             "Sachez que prendre une plainte est une obligation légale pour nous. On ne peut pas refuser.",
+             "Depuis le Grenelle des violences conjugales de 2019, on utilise une grille de 15 critères pour évaluer le danger.",
+             "Le Téléphone Grave Danger permet d'alerter les secours 24h/24 sans composer de numéro.",
+             "N'attendez pas. Appelez le 17 à tout moment — même la nuit, même si vous n'êtes pas sûre."]},
+    {id:'avocat',x:15*TILE+8,y:9*TILE+8,col:'#7c3aed',hair:'#4c1d95',name:'📋 Maître Duval — Avocate',bubble:'Tes droits !',
+     lines:["Une ordonnance de protection peut être obtenue sans avoir déposé de plainte.",
+             "Le juge aux affaires familiales peut l'accorder en urgence — en 6 jours en moyenne.",
+             "Le Bracelet Anti-Rapprochement (BAR) est porté par l'agresseur.",
+             "S'il franchit la zone d'exclusion fixée par le juge, la victime ET la police sont alertées.",
+             "Et non : le 'devoir conjugal' n'existe pas légalement. Forcer son partenaire est un crime."]},
+    {id:'p2',x:9*TILE+8,y:12*TILE+8,col:'#a855f7',hair:'#6b21a8',name:"🌟 Portail — Zone 3",bubble:'Quiz ici !',isPortal:true,
+     lines:["Tu as bien exploré le Commissariat.","Réponds aux questions pour passer à l'Hôpital.","Prête ?"]},
+  ],
+  3:[
+    {id:'doc',x:4*TILE+8,y:5*TILE+8,col:'#c8d8f8',hair:'#3a3a3a',name:'🩺 Dr. Marchand — Urgentiste',bubble:'Écoute-moi',
+     lines:["Chaque semaine, je soigne des femmes blessées par leur partenaire.",
+             "Les victimes minimisent souvent : « je suis tombée », « c'est rien ».",
+             "Ce qu'on appelle la dissociation, c'est quand le cerveau 'débranche' les émotions pour survivre.",
+             "Une victime qui paraît calme après une agression n'est pas complice — elle survit.",
+             "Ici, on établit des certificats médicaux : des preuves, même sans plainte immédiate."]},
+    {id:'psy',x:15*TILE+8,y:8*TILE+8,col:'#e879a0',hair:'#831843',name:"🧠 Dre. Laurent — Psychologue",bubble:"Tu n'es pas seule",
+     lines:["Les enfants exposés aux violences conjugales sont des victimes co-exposées.",
+             "Ils peuvent développer des troubles du sommeil, de l'anxiété, un échec scolaire.",
+             "Certains gardent un sentiment de culpabilité : 'j'aurais pu les arrêter'.",
+             "Les Unités Médico-Judiciaires (UMJ) permettent de constater les blessures avec des experts.",
+             "Ce certificat médical est une preuve essentielle — et on peut l'obtenir sans porter plainte de suite."]},
+    {id:'p3',x:9*TILE+8,y:12*TILE+8,col:'#f7c948',hair:'#92400e',name:'🏆 Portail Final',bubble:'Quiz final !',isPortal:true,
+     lines:["Tu as traversé les trois zones.","Ce dernier quiz résume tout ce que tu as appris.","C'est la dernière étape. Tu es prête !"]},
+  ]
+};
+
+// ── JOURNAUX CACHÉS (10 au total, répartis dans les 3 zones)
+// Basés sur de vraies sources journalistiques concernant les violences conjugales
+const NEWS_ITEMS=[
+  // ZONE 1 (4 journaux)
+  {z:1,tx:1,ty:1,id:'n1',
+   title:'LE MONDE — Féminicides en hausse',src:'Le Monde · 25 nov. 2024',
+   content:'En 2023, 115 féminicides conjugaux ont été enregistrés\nen France par les services de sécurité, auxquels s\'ajoutent\n437 tentatives d\'homicides conjugaux.\nLe nombre total de victimes de violences conjugales\na doublé depuis 2016, passant de 135 000 à 271 000.\n(Source : SSMSI, Ministère de l\'Intérieur, 2024)'},
+  {z:1,tx:17,ty:3,id:'n2',
+   title:'LIBERATION — Le chiffre noir',src:'Libération · 6 nov. 2024',
+   content:'Selon l\'enquête de victimation VRS 2023, seule\n1 victime de violences conjugales sur 6 porte plainte.\nAvant 2023, ce chiffre était de 1 sur 7.\nCes statistiques ne captent qu\'une partie de la réalité :\nbeaucoup de violences ne sont jamais signalées.'},
+  {z:1,tx:1,ty:11,id:'n3',
+   title:'LE FIGARO — Profil des victimes',src:'Le Figaro · nov. 2024',
+   content:'84% des victimes de violences conjugales enregistrées\nen France sont des femmes (85% en 2023).\n73% d\'entre elles ont entre 20 et 45 ans.\nLa tranche d\'âge la plus touchée : les 30-34 ans\n(17% des victimes).'},
+  {z:1,tx:18,ty:11,id:'n4',
+   title:'20 MINUTES — Grenelle 2019',src:'20 Minutes · 2023',
+   content:'Depuis le Grenelle des violences conjugales de 2019,\nles conditions d\'accueil des victimes en commissariat\nse sont améliorées. Les plaintes pour des faits anciens\nont augmenté : 30% des plaintes en 2023 concernent\ndes faits antérieurs à l\'année d\'enregistrement.'},
+  // ZONE 2 (3 journaux)
+  {z:2,tx:1,ty:3,id:'n5',
+   title:'LE PARISIEN — Bracelet anti-rapprochement',src:'Le Parisien · 2024',
+   content:'Depuis la loi du 28 décembre 2019, le Bracelet\nAnti-Rapprochement (BAR) peut être ordonné par\nun juge. En cas d\'approche de l\'agresseur, une alerte\nest envoyée simultanément à la victime et aux forces\nde l\'ordre. En 2023, plus de 4 000 BAR étaient actifs.'},
+  {z:2,tx:17,ty:5,id:'n6',
+   title:'OUEST FRANCE — Ordonnance de protection',src:'Ouest France · 2023',
+   content:'L\'ordonnance de protection, créée par la loi\ndu 9 juillet 2010, permet au juge aux affaires\nfamiliales d\'éloigner un conjoint violent en urgence\n— sans attendre un dépôt de plainte.\nEn 2022, 4 532 ordonnances ont été délivrées en France.'},
+  {z:2,tx:1,ty:11,id:'n7',
+   title:'LA CROIX — TGD, téléphone qui sauve',src:'La Croix · 2024',
+   content:'Le Téléphone Grave Danger (TGD) est attribué\npar le procureur de la République aux victimes\nà risque élevé. En appuyant sur un bouton,\nla victime déclenche une alerte immédiate\naux forces de l\'ordre. Plus de 7 000 TGD\nont été déployés en France fin 2023.'},
+  // ZONE 3 (3 journaux)
+  {z:3,tx:1,ty:3,id:'n8',
+   title:'LE MONDE — UMJ : preuves sans plainte',src:'Le Monde · 2024',
+   content:'Les Unités Médico-Judiciaires (UMJ) permettent\nà toute victime de faire constater ses blessures\npar un médecin expert — sans obligation de porter\nplainte immédiatement. Le certificat médical établi\npeut être utilisé comme preuve judiciaire des années\nplus tard.'},
+  {z:3,tx:17,ty:7,id:'n9',
+   title:'FRANCE INFO — Enfants co-exposés',src:'France Info · nov. 2023',
+   content:'En France, on estime que 143 000 enfants vivent\ndans des foyers où se produisent des violences\nconjugales (UNICEF France, 2023).\nCes enfants sont reconnus comme victimes directes.\nIls peuvent développer un ESPT, des troubles scolaires\net un risque accru de reproduire ces violences.'},
+  {z:3,tx:3,ty:12,id:'n10',
+   title:'HUMANITE — Dissociation : réaction normale',src:'L\'Humanité · 2024',
+   content:'"Elle n\'a pas l\'air choquée" : ce jugement\nconduit parfois à ne pas croire les victimes.\nPourtant, la dissociation — se couper de ses\némotions pendant un traumatisme — est un\nmécanisme de survie documenté scientifiquement.\nParaître calme ne signifie pas ne pas avoir souffert.'},
+];
+
+// ── PALETTES ──
+const PAL={
+  g:['#2d4a1e','#3a5e28','#253d18'],
+  r:['#3a3a3a','#444','#333'],
+  p:['#4a4a5e','#555570','#3e3e52'],
+  li:['#2a3a4e','#283648','#243040'],
+};
+
+// ── JOUEUR ──
+const P={x:9*TILE+8,y:7*TILE+8,speed:2.2,dir:2,w:14,h:18,moving:false};
+let npcs=[], fiches=[], newsOnMap=[];
+
+function loadZone(z){
+  CZ=z;
+  P.x=9*TILE+8; P.y=7*TILE+8; P.dir=2;
+  npcs=NPCD[z].map(n=>({...n,done:false}));
+  fiches=FICHED[z].map(f=>({...f,collected:false}));
+  newsOnMap=NEWS_ITEMS.filter(n=>n.z===z).map(n=>{
+    const found=collectedNews.find(c=>c.id===n.id);
+    return {...n, collected:!!found, visible:false};
+  });
+  document.getElementById('zlbl').textContent=ZMETA[z].lbl;
+  document.getElementById('fcnt').textContent=allFiches.length;
+  document.getElementById('ncnt').textContent=collectedNews.length;
+}
+
+// ── DESSIN BÂTIMENTS (avec relief) ──
+function tv(x,y){return(x*73+y*37)%3;}
+
+function drawBuilding(px,py,x,y){
+  // Base
+  const base=['#1e2244','#222548','#1a1e3e'];
+  ctx.fillStyle=base[tv(x,y)%3];
+  ctx.fillRect(px,py,TILE,TILE);
+  // Gradient relief gauche→droite
+  const g=ctx.createLinearGradient(px,py,px+TILE,py);
+  g.addColorStop(0,'rgba(130,145,210,0.18)');
+  g.addColorStop(0.35,'rgba(80,90,160,0.06)');
+  g.addColorStop(1,'rgba(0,0,0,0.25)');
+  ctx.fillStyle=g;ctx.fillRect(px,py,TILE,TILE);
+  // Toit
+  ctx.fillStyle='rgba(210,220,255,0.14)';ctx.fillRect(px,py,TILE,4);
+  // Pilier gauche éclairé
+  ctx.fillStyle='rgba(160,170,230,0.13)';ctx.fillRect(px,py+4,3,TILE-4);
+  // Côté droit sombre
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(px+TILE-3,py+4,3,TILE-4);
+  // Fenêtre (hors bords)
+  if(x>0&&x<COLS-1&&y>0&&y<ROWS-1){
+    const s=x*31+y*19;
+    ctx.fillStyle='#0a0a1e';ctx.fillRect(px+7,py+7,18,13);
+    // Vitrage : allumé la nuit
+    const lit=(s%6===0);
+    ctx.fillStyle=lit?'#f7e08088':'#181838';
+    ctx.fillRect(px+8,py+8,16,11);
+    // Croisillons
+    ctx.fillStyle='#0a0a1e';
+    ctx.fillRect(px+15,py+8,2,11);
+    ctx.fillRect(px+8,py+13,16,2);
+    // Rebord
+    ctx.fillStyle='rgba(255,255,255,0.09)';ctx.fillRect(px+7,py+19,18,2);
+    if(lit){ctx.fillStyle='rgba(255,220,80,0.1)';ctx.fillRect(px+8,py+8,5,4);}
+  }
+}
+
+function drawHospWall(px,py){
+  const g=ctx.createLinearGradient(px,py,px+TILE,py+TILE);
+  g.addColorStop(0,'#e8f0ff');g.addColorStop(1,'#c8d8f0');
+  ctx.fillStyle=g;ctx.fillRect(px,py,TILE,TILE);
+  ctx.fillStyle='rgba(200,0,0,0.2)';
+  ctx.fillRect(px+13,py+5,6,22);ctx.fillRect(px+5,py+13,22,6);
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(px,py,TILE,3);
+  ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fillRect(px+TILE-3,py,3,TILE);
+}
+
+function drawPoliceWall(px,py){
+  const g=ctx.createLinearGradient(px,py,px+TILE,py+TILE);
+  g.addColorStop(0,'#263022');g.addColorStop(1,'#161e12');
+  ctx.fillStyle=g;ctx.fillRect(px,py,TILE,TILE);
+  ctx.fillStyle='rgba(120,200,80,0.12)';ctx.fillRect(px,py,TILE,3);
+  ctx.fillStyle='rgba(0,0,0,0.28)';ctx.fillRect(px+TILE-3,py,3,TILE);
+  const x=Math.floor(px/TILE),y2=Math.floor(py/TILE);
+  if(x>0&&x<COLS-1&&y2>0&&y2<ROWS-1){
+    ctx.fillStyle='#1a2a14';ctx.fillRect(px+8,py+7,16,14);
+    ctx.fillStyle='#253318';ctx.fillRect(px+9,py+8,14,12);
+  }
+}
+
+function drawTile(x,y,t){
+  const px=x*TILE,py=y*TILE,v=tv(x,y);
+  if(t===2){
+    if(CZ===1)drawBuilding(px,py,x,y);
+    else if(CZ===2)drawPoliceWall(px,py);
+    else drawHospWall(px,py);
+    return;
+  }
+  let cols;
+  if(t===0)cols=CZ===1?PAL.g:PAL.li;
+  else if(t===1)cols=PAL.r;
+  else if(t===4)cols=PAL.li;
+  else cols=PAL.p;
+  ctx.fillStyle=cols[v%cols.length];ctx.fillRect(px,py,TILE,TILE);
+  if(t===0&&CZ===1){
+    ctx.fillStyle='#4a7a28';
+    const s=x*13+y*7;
+    for(let i=0;i<3;i++)ctx.fillRect(px+((s*(i+1)*17)%28)+2,py+((s*(i+1)*11)%24)+4,1,3);
+  }else if(t===1){
+    ctx.fillStyle='rgba(255,255,255,0.03)';
+    if((x+y)%4===0)ctx.fillRect(px+14,py,4,TILE);
+  }else if(t===5){
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    ctx.fillRect(px,py,TILE,2);ctx.fillRect(px,py+TILE-2,TILE,2);
+  }
+}
+
+// ── LAMPADAIRES (Zone 1, nuit) ──
+const LAMPS=[{tx:6,ty:5},{tx:12,ty:5},{tx:6,ty:9},{tx:12,ty:9},{tx:3,ty:7},{tx:16,ty:7},{tx:9,ty:12}];
+function drawLamp(lp){
+  const px=lp.tx*TILE+16,py=lp.ty*TILE;
+  ctx.fillStyle='#8a8aaa';ctx.fillRect(px-2,py+4,4,TILE-4);
+  ctx.fillStyle='#8a8aaa';ctx.fillRect(px-8,py+4,10,3);
+  ctx.fillStyle='#c0c0a0'; // toujours éteint (mode jour)
+  ctx.fillRect(px-10,py,10,8);ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(px-10,py,10,2);
+}
+
+// ── JOURNAUX CACHÉS SUR LA MAP ──
+function drawNewsItem(n){
+  const px=n.tx*TILE,py=n.ty*TILE;
+  if(!n.visible&&!n.collected){
+    // Légère lueur si très proche
+    const dist=Math.hypot(P.x-(px+16),P.y-(py+16));
+    if(dist<30){
+      ctx.fillStyle='rgba(134,239,172,0.15)';
+      ctx.beginPath();ctx.ellipse(px+16,py+20,14,5,0,0,Math.PI*2);ctx.fill();
+    }
+    return;
+  }
+  if(n.collected)return;
+  // Journal visible : petit objet animé
+  const bob=Math.sin(frame*.1)*2;
+  ctx.fillStyle='rgba(134,239,172,0.2)';
+  ctx.beginPath();ctx.ellipse(px+16,py+24,11,4,0,0,Math.PI*2);ctx.fill();
+  // Feuille journal
+  ctx.fillStyle='#f0ffe8';ctx.fillRect(px+6,py+8+bob,20,18);
+  ctx.fillStyle='#86efac';ctx.fillRect(px+6,py+8+bob,20,5);
+  // Titre journal
+  ctx.fillStyle='#1a3a1a';ctx.font='4px "Press Start 2P"';ctx.fillText('NEWS',px+8,py+14+bob);
+  // Lignes texte
+  ctx.fillStyle='#555';
+  for(let i=0;i<3;i++)ctx.fillRect(px+8,py+17+bob+i*3,14,1);
+  // Label
+  ctx.fillStyle='#86efac';ctx.font='5px "Press Start 2P"';ctx.fillText('[ESP]',px+3,py+6);
+}
+
+// ── NPC ──
+function drawPortal(n){
+  const col=CZ===3?'#f7c948':'#a855f7';
+  const pulse=Math.sin(frame*.07)*4;
+  ctx.strokeStyle=col+'aa';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(n.x,n.y,18+pulse,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle=col+'66';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(n.x,n.y,10+pulse*.5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=col+'33';ctx.beginPath();ctx.arc(n.x,n.y,8,0,Math.PI*2);ctx.fill();
+  ctx.font='13px serif';ctx.fillText(CZ===3?'🏆':'⭐',n.x-7,n.y+5);
+  if(STATE==='playing'){ctx.fillStyle=col;ctx.font='5px "Press Start 2P"';ctx.fillText('QUIZ',n.x-10,n.y-26);}
+}
+
+function drawNPC(n){
+  if(n.isPortal){drawPortal(n);return;}
+  const px=Math.round(n.x-TILE/2),py=Math.round(n.y-TILE/2);
+  // Corps avec léger gradient
+  ctx.fillStyle=n.col;ctx.fillRect(px+5,py+10,12,14);
+  const cg=ctx.createLinearGradient(px+5,py+10,px+17,py+24);
+  cg.addColorStop(0,'rgba(255,255,255,0.12)');cg.addColorStop(1,'rgba(0,0,0,0.18)');
+  ctx.fillStyle=cg;ctx.fillRect(px+5,py+10,12,14);
+  ctx.fillStyle='#f5cba7';ctx.fillRect(px+6,py+2,10,10);
+  ctx.fillStyle=n.hair;ctx.fillRect(px+6,py+2,10,3);ctx.fillRect(px+5,py+3,2,6);ctx.fillRect(px+15,py+3,2,6);
+  ctx.fillStyle='#1a1a2e';ctx.fillRect(px+8,py+6,2,2);ctx.fillRect(px+12,py+6,2,2);
+  ctx.fillStyle='#2c3e50';ctx.fillRect(px+6,py+22,4,8);ctx.fillRect(px+12,py+22,4,8);
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.ellipse(px+11,py+31,8,3,0,0,Math.PI*2);ctx.fill();
+  if(!n.done&&STATE==='playing'){
+    const bob=Math.sin(frame*.06)*2;
+    ctx.fillStyle='#fffd';ctx.fillRect(px-12,py-20+bob,56,14);
+    ctx.fillStyle='#f7c948';ctx.font='5px "Press Start 2P"';ctx.fillText(n.bubble||'...',px-9,py-10+bob);
+  }
+}
+
+// ── JOUEUR ──
+function drawPlayer(){
+  const px=Math.round(P.x-P.w/2),py=Math.round(P.y-P.h/2);
+  const lo=P.moving?Math.sin(frame*.25)*3:0;
+  ctx.fillStyle='#c0392b';ctx.fillRect(px+2,py+10,12,14);
+  const cg=ctx.createLinearGradient(px+2,py+10,px+14,py+24);
+  cg.addColorStop(0,'rgba(255,255,255,0.15)');cg.addColorStop(1,'rgba(0,0,0,0.15)');
+  ctx.fillStyle=cg;ctx.fillRect(px+2,py+10,12,14);
+  ctx.fillStyle='#f5cba7';ctx.fillRect(px+3,py+2,10,10);
+  ctx.fillStyle='#4a2800';ctx.fillRect(px+3,py+2,10,3);ctx.fillRect(px+2,py+3,2,5);ctx.fillRect(px+12,py+3,2,5);
+  ctx.fillStyle='#1a1a2e';
+  if(P.dir===2){ctx.fillRect(px+5,py+6,2,2);ctx.fillRect(px+9,py+6,2,2);}
+  else if(P.dir===1)ctx.fillRect(px+4,py+6,2,2);
+  else if(P.dir===3)ctx.fillRect(px+10,py+6,2,2);
+  ctx.fillStyle='#2c3e50';ctx.fillRect(px+3,py+22,4,8+lo);ctx.fillRect(px+9,py+22,4,8-lo);
+  ctx.fillStyle='#922b21';ctx.fillRect(px+2,py+28,6,3);ctx.fillRect(px+8,py+28,6,3);
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.ellipse(px+8,py+33,8,3,0,0,Math.PI*2);ctx.fill();
+}
+
+// ── OVERLAY NUIT (désactivé) ──
+function drawNight(){}
+
+// ── COLLISION ──
+function solid(tx,ty){if(tx<0||tx>=COLS||ty<0||ty>=ROWS)return true;return MAPS[CZ][ty][tx]===2;}
+function checkCol(nx,ny){
+  // Use a smaller hitbox margin for smoother sliding
+  const m=6,hw=P.w/2-m,hh=P.h/2-m;
+  const cx1=Math.floor((nx-hw)/TILE),cx2=Math.floor((nx+hw)/TILE);
+  const cy1=Math.floor((ny-hh)/TILE),cy2=Math.floor((ny+hh)/TILE);
+  for(let ty=cy1;ty<=cy2;ty++)for(let tx=cx1;tx<=cx2;tx++)if(solid(tx,ty))return true;
+  return false;
+}
+
+// ── FICHES ──
+function drawFiche(f){
+  if(f.collected)return;
+  const px=f.x-TILE/2,py=f.y-TILE/2,bob=Math.sin(frame*.08)*2;
+  ctx.fillStyle='rgba(247,201,72,.12)';ctx.beginPath();ctx.ellipse(f.x,f.y+14,12,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fffde7';ctx.fillRect(px+6,py+4+bob,18,22);
+  ctx.fillStyle='#f7c948';ctx.fillRect(px+6,py+4+bob,18,5);
+  ctx.fillStyle='#999';ctx.fillRect(px+9,py+12+bob,12,1);ctx.fillRect(px+9,py+15+bob,12,1);ctx.fillRect(px+9,py+18+bob,8,1);
+  if(frame%20<10){ctx.fillStyle='#f7c948';ctx.fillRect(px+3,py+2+bob,2,2);ctx.fillRect(px+22,py+6+bob,2,2);}
+}
+
+// ── UPDATE ──
+function update(dt=1){
+  if(STATE!=='playing')return;
+  let dx=0,dy=0;
+  if(keys['ArrowLeft']||keys['q']||keys['Q']){dx=-1;P.dir=1;}
+  if(keys['ArrowRight']||keys['d']||keys['D']){dx=1;P.dir=3;}
+  if(keys['ArrowUp']||keys['z']||keys['Z']){dy=-1;P.dir=0;}
+  if(keys['ArrowDown']||keys['s']||keys['S']){dy=1;P.dir=2;}
+  if(dx&&dy){dx*=.707;dy*=.707;}
+  P.moving=!!(dx||dy);
+
+  const sp=P.speed*dt;
+  const nx=P.x+dx*sp, ny=P.y+dy*sp;
+  if(!checkCol(nx,ny)){
+    P.x=nx; P.y=ny;
+  } else if(!checkCol(nx,P.y)){
+    P.x=nx;
+  } else if(!checkCol(P.x,ny)){
+    P.y=ny;
+  }
+
+  // Collecte fiches
+  fiches.forEach(f=>{
+    if(!f.collected&&Math.hypot(P.x-f.x,P.y-f.y)<20){
+      f.collected=true;allFiches.push(f);
+      document.getElementById('fcnt').textContent=allFiches.length;
+      showFiche(f);
+    }
+  });
+  // Journaux : révélation à l'approche
+  newsOnMap.forEach(n=>{
+    if(n.collected)return;
+    const bx=n.tx*TILE+16,by=n.ty*TILE+16;
+    const dist=Math.hypot(P.x-bx,P.y-by);
+    if(dist<28)n.visible=true;
+  });
+  frame++;
+}
+
+// ── RENDER ──
+function render(){
+  ctx.clearRect(0,0,640,480);
+  const map=MAPS[CZ];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)drawTile(x,y,map[y][x]);
+  // Lampadaires zone 1
+  if(CZ===1)LAMPS.forEach(drawLamp);
+  // Journaux
+  newsOnMap.forEach(drawNewsItem);
+  // Fiches
+  fiches.forEach(drawFiche);
+  // NPC
+  npcs.forEach(drawNPC);
+  // Joueur
+  drawPlayer();
+  // Overlay nuit
+  drawNight();
+  // Vignette
+  const vg=ctx.createRadialGradient(320,240,90,320,240,380);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,.45)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,640,480);
+}
+
+// ── INTERACTION ──
+function interact(){
+  // Fermer aide/note si ouvert
+  if(helpOpen){helpOpen=false;document.getElementById('helpov').style.display='none';return;}
+  if(noteOpen){noteOpen=false;document.getElementById('noteov').style.display='none';return;}
+  if(STATE==='title'){document.getElementById('ts').style.display='none';loadZone(1);STATE='playing';return;}
+  if(STATE==='transition'){document.getElementById('ztrans').style.display='none';loadZone(pendingZ);STATE='playing';return;}
+  if(STATE==='dialogue'){advDial();return;}
+  if(STATE==='fiche'){closeFiche();return;}
+  if(STATE==='newspaper'){closeNews();return;}
+  if(STATE==='journal'){toggleJ();return;}
+  if(STATE!=='playing')return;
+  // Journaux visibles à proximité
+  for(const n of newsOnMap){
+    if(!n.collected&&n.visible){
+      const bx=n.tx*TILE+16,by=n.ty*TILE+16;
+      if(Math.hypot(P.x-bx,P.y-by)<30){collectNews(n);return;}
+    }
+  }
+  // NPC
+  for(const n of npcs){
+    if(Math.hypot(P.x-n.x,P.y-n.y)<36){
+      n.isPortal?startQuiz():startDial(n);return;
+    }
+  }
+}
+
+// ── DIALOGUE ──
+function startDial(n){curNPC=n;dLine=0;STATE='dialogue';document.getElementById('dial').style.display='block';document.getElementById('dwho').textContent=n.name;document.getElementById('dtxt').textContent=n.lines[0];}
+function advDial(){
+  dLine++;
+  if(dLine>=curNPC.lines.length){curNPC.done=true;document.getElementById('dial').style.display='none';STATE='playing';curNPC=null;}
+  else document.getElementById('dtxt').textContent=curNPC.lines[dLine];
+}
+
+// ── FICHE ──
+function showFiche(f){STATE='fiche';document.getElementById('fov').style.display='block';document.getElementById('ft').textContent='📄 '+f.title;document.getElementById('fc').textContent=f.content;}
+function closeFiche(){document.getElementById('fov').style.display='none';STATE='playing';}
+
+// ── JOURNAL PAPIER ──
+function collectNews(n){
+  n.collected=true;collectedNews.push(n);
+  document.getElementById('ncnt').textContent=collectedNews.length;
+  document.getElementById('jncnt').textContent=collectedNews.length;
+  showNews(n);
+}
+function showNews(n){
+  STATE='newspaper';
+  document.getElementById('nov').style.display='block';
+  document.getElementById('nt').textContent='📰 '+n.title;
+  document.getElementById('nsrc').textContent='Source : '+n.src;
+  document.getElementById('nc').textContent=n.content;
+  showNotif('📰 Journal collecté ! ('+collectedNews.length+'/10)');
+}
+function closeNews(){document.getElementById('nov').style.display='none';STATE='playing';}
+
+// ── NOTIF ──
+let _nt=null;
+function showNotif(txt){const el=document.getElementById('notif');el.textContent=txt;el.style.opacity='1';clearTimeout(_nt);_nt=setTimeout(()=>el.style.opacity='0',2500);}
+
+// ── JOURNAL PERSO ──
+function showJTab(t){
+  jTab=t;
+  document.getElementById('jtab-f').className='jtab'+(t==='f'?' active':'');
+  document.getElementById('jtab-n').className='jtab'+(t==='n'?' active':'');
+  const en=document.getElementById('jents'),emp=document.getElementById('jemp');
+  en.innerHTML='';
+  if(t==='f'){
+    if(allFiches.length===0){emp.style.display='block';emp.textContent='Aucune fiche collectée pour l\'instant.';}
+    else{emp.style.display='none';allFiches.forEach(f=>{const d=document.createElement('div');d.className='je';d.innerHTML=`<div class="jth jth-f">${f.title}</div>${f.content.replace(/\n/g,'<br>')}`;en.appendChild(d);});}
+  } else {
+    if(collectedNews.length===0){emp.style.display='block';emp.textContent='Explore la carte pour trouver les journaux cachés !';}
+    else{emp.style.display='none';collectedNews.forEach(n=>{const d=document.createElement('div');d.className='je';d.innerHTML=`<div class="jth jth-n">${n.title}</div><div style="color:#4a8a5a;font-family:'Press Start 2P',monospace;font-size:5px;margin-bottom:4px;">${n.src}</div>${n.content.replace(/\n/g,'<br>')}`;en.appendChild(d);});}
+  }
+}
+
+function toggleJ(){
+  if(STATE==='journal'){document.getElementById('jov').style.display='none';STATE='playing';}
+  else if(STATE==='playing'){STATE='journal';showJTab(jTab);document.getElementById('jov').style.display='block';}
+}
+
+// ── QUIZ ──
+let cqd=[];
+function startQuiz(){quizScore=0;quizQ=0;quizOK=false;cqd=QD[CZ];STATE='quiz';document.getElementById('qtit').textContent=`⚡ QUIZ — ${ZMETA[CZ].lbl.toUpperCase()}`;document.getElementById('qov').style.display='block';renderQ();}
+function renderQ(){
+  const q=cqd[quizQ];
+  document.getElementById('qprog').textContent=`Question ${quizQ+1} / ${cqd.length}`;
+  document.getElementById('qq').textContent=q.q;
+  document.getElementById('qfb').textContent='';document.getElementById('qnx').style.display='none';
+  const od=document.getElementById('qopts');od.innerHTML='';
+  q.o.forEach((o,i)=>{const b=document.createElement('button');b.className='qo';b.textContent=`${['A','B','C','D'][i]}) ${o}`;b.onclick=()=>ansQ(i,b);od.appendChild(b);});
+  quizOK=false;
+}
+function ansQ(idx,btn){
+  if(quizOK)return;quizOK=true;
+  const q=cqd[quizQ];
+  document.querySelectorAll('.qo').forEach(b=>b.style.pointerEvents='none');
+  if(idx===q.c){btn.classList.add('ok');quizScore++;document.getElementById('qfb').style.color='#4ade80';document.getElementById('qfb').textContent=q.fb;}
+  else{btn.classList.add('ko');document.querySelectorAll('.qo')[q.c].classList.add('ok');document.getElementById('qfb').style.color='#f87171';document.getElementById('qfb').textContent='❌ '+q.fb;}
+  document.getElementById('qnx').style.display='block';
+}
+function nextQ(){quizQ++;if(quizQ>=cqd.length)endQuiz();else renderQ();}
+function endQuiz(){
+  document.getElementById('qov').style.display='none';zScores[CZ-1]=quizScore;STATE='score';
+  document.getElementById('sov').style.display='block';
+  document.getElementById('sct').textContent=`✅ ${ZMETA[CZ].lbl.toUpperCase()} — TERMINÉE`;
+  document.getElementById('scn').textContent=`${quizScore} / ${cqd.length}`;
+  let msg=quizScore===cqd.length?'🌟 Parfait ! Tu as tout retenu.\n':quizScore>=cqd.length*.6?'👏 Très bien ! Consulte ton journal\npour les points manquants.\n':'📖 Relisez les fiches et réessayez !\n';
+  msg+=CZ<3?`\nProchaine étape : ${ZMETA[CZ+1].name}`:'\nDernière zone terminée !';
+  document.getElementById('scm').textContent=msg;
+  document.getElementById('snx').textContent=CZ===3?'VOIR LE RÉSULTAT FINAL ▶':'ZONE SUIVANTE ▶';
+}
+function goNext(){document.getElementById('sov').style.display='none';CZ===3?showEnding():showTrans(CZ+1);}
+function retryQ(){document.getElementById('sov').style.display='none';zScores[CZ-1]=0;startQuiz();}
+
+// ── TRANSITION ──
+function showTrans(z){
+  pendingZ=z;
+  document.getElementById('znum').textContent=z;
+  document.getElementById('ztnm').textContent=ZMETA[z].name;
+  document.getElementById('ztds').textContent=ZMETA[z].desc;
+  document.getElementById('ztrans').style.display='flex';STATE='transition';
+}
+
+// ── FIN ──
+function showEnding(){
+  // Cacher la bande du haut
+  document.getElementById('titlebar').style.display='none';
+  document.getElementById('hud').style.display='none';
+  const total=zScores.reduce((a,b)=>a+b,0);
+  const max=QD[1].length+QD[2].length+QD[3].length;
+  document.getElementById('end').style.display='flex';
+  document.getElementById('esc').textContent=`SCORE TOTAL : ${total} / ${max}`;
+  document.getElementById('enews').textContent=`📰 Journaux collectés : ${collectedNews.length} / 10`;
+  let msg=total===max?'Tu as obtenu le score parfait !\nTu maîtrises les enjeux des violences faites aux femmes.':total>=max*.7?"Bravo pour ton engagement !\nRevois les fiches pour consolider tes connaissances.":"C'est un premier pas important.\nRevois les fiches et les journaux collectés.";
+  document.getElementById('emsg').textContent=msg;
+  document.getElementById('ezscores').innerHTML=[1,2,3].map(z=>`<div>${ZMETA[z].lbl} : ${zScores[z-1]}/${QD[z].length}</div>`).join('');
+}
+
+// ── BOUCLE (delta time pour vitesse stable quel que soit le framerate) ──
+let lastTime=0;
+function loop(ts){
+  const dt=Math.min((ts-lastTime)/16.67,3);
+  lastTime=ts;
+  if(['playing','dialogue','fiche','journal','quiz','score','newspaper'].includes(STATE)){
+    update(dt);render();
+  }
+  requestAnimationFrame(loop);
+}
+
+// ── CLAVIER ──
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key===' '){e.preventDefault();interact();}
+  if(e.key==='j'||e.key==='J'){if(STATE==='playing'||STATE==='journal')toggleJ();}
+});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();},{passive:false});
+
+loadZone(1);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
